@@ -118,6 +118,8 @@ class envViewer extends AbstractForm
     {    
         $this->saveButton->hide();
         $this->envTable->items->clear();
+        
+        $this->envTable->data('originalValues',null);
     }
 
     /**
@@ -135,6 +137,15 @@ class envViewer extends AbstractForm
     function doKeyUpEsc(UXKeyEvent $e = null)
     {    
         $this->hide();
+    }
+
+    /**
+     * @event keyUp-Ctrl+S 
+     */
+    function doKeyUpCtrlS(UXKeyEvent $e = null)
+    {    
+        if ($this->saveButton->visible)
+            $this->doSaveButtonAction();
     }
     
     static function parseEnvironmentArray($game)
@@ -162,7 +173,7 @@ class envViewer extends AbstractForm
         $environment = self::parseEnvironmentArray($game);
         foreach ($environment as $env => $val)
             $this->envTable->items->add(['variable'=>$env,'value'=>$val]);
-            
+        
         $this->envTable->data('originalValues',$this->envTable->items->toArray());
     }
     

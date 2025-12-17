@@ -1,6 +1,8 @@
 <?php
 namespace app\modules;
 
+use httpclient;
+use facade\Async;
 use framework;
 use facade\Json;
 use Throwable;
@@ -102,16 +104,18 @@ class FilesWorker
 
         if ($argsAfterExec != null)
             $exec = array_merge($exec,str::split($argsAfterExec,' '));
+            
         if (app()->appModule()->games->get('steamRuntime',$name))
         {
             $steamRuntime = self::findSteamRuntime();
             if ($steamRuntime == false)
                 app()->appModule()->games->set('steamRuntime',false,$name);
             else 
-                array_unshift($exec,$steamRuntime);
+                $exec = array_merge([$steamRuntime,'--'],$exec);
         }
+        
         if ($argsBeforeExec != null)
-            array_unshift($exec,$argsBeforeExec);
+            $exec = array_merge(str::split($argsBeforeExec,' '),$exec);
         
         fs::ensureParent($mainEnvironment['STEAM_COMPAT_DATA_PATH']);
         fs::makeDir($mainEnvironment['STEAM_COMPAT_DATA_PATH']);
@@ -212,22 +216,25 @@ class FilesWorker
     
     static function fetchProtonReleases()
     {
+        $client = new HttpClient;
+        $client->connectTimeout = $client->readTimeout = 5000;
+        
         try 
         { 
-            $releases = Json::decode(fs::get('https://api.github.com/repos/gloriouseggroll/proton-ge-custom/releases'));
-            if (isset($releases['message']))
+            $releases = $client->get('https://api.github.com/repos/gloriouseggroll/proton-ge-custom/releases');
+            if ($releases->isFail())
                 throw new IOException;
             
-            return $releases;
+            return Json::decode($releases->body());
         } catch (Throwable $ex)
         {
             try
             {
-                $url = fs::get('https://zzedovec.github.io/resources/ofmelauncher/latestproton');
-                if (str::contains($url,'tar.gz') == false)
+                $url = $client->get('https://zzedovec.github.io/resources/ofmelauncher/latestproton');
+                if ($url->isFail())
                     throw new IOException;
                 
-                return $url;
+                return $url->body();
             } catch (Throwable $ex){}
             
             return false;
@@ -277,15 +284,12 @@ class FilesWorker
         
         if ($proton == 'GE-Proton Latest' or $proton == null)
         {
-            while ($GLOBALS['LatestProton'] == 'fetching') #Block main thread until fetched
-                wait(300);
-                
-            if (isset($GLOBALS['LatestProton']) == false)
+            if (isset($GLOBALS['LatestProton']) == false or $GLOBALS['LatestProton'] == 'fetching')
                 $availableName = self::findNewestAvailableProton();
             else 
             {
                 $availableName = str::sub($GLOBALS['LatestProton'],str::lastPos($GLOBALS['LatestProton'],'/') + 1,str::pos($GLOBALS['LatestProton'],'.tar'));
-                if (($exec == 'proton' and fs::isFile("$protonPath/$availableName/proton") == false) or fs::isFile("$protonPath/$availableName/files/bin/$exec") == false)
+                if (($exec == 'proton' and fs::isFile("$protonPath/$availableName/proton") == false) or ($exec != 'proton' and fs::isFile("$protonPath/$availableName/files/bin/$exec") == false))
                 {
                     if ($skipIfNotFound == false)
                     {
@@ -300,7 +304,11 @@ class FilesWorker
                     }
                     
                     if ($skipIfNotFound or ($exec == 'proton' and fs::isFile("$protonPath/$availableName/proton") == false) or fs::isFile("$protonPath/$availableName/files/bin/$exec") == false) #Check again after download
+                    {
                         $availableName = self::findNewestAvailableProton();
+                        if ($availableName == false and ($skipIfNotFound == false and isset($mainForm) and $mainForm->visible))
+                            uiLater(function () use ($mainForm){$mainForm->switchPlayButton('play');});
+                    }
                 }
             }
             

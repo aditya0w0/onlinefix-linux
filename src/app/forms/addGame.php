@@ -124,7 +124,7 @@ class addGame extends AbstractForm
     {
         $source = $this->appModule()->launcher->get('downloadsSource','User Settings');
         $client = new HttpClient;
-        $client->connectTimeout = 3000;
+        $client->connectTimeout = $client->readTimeout = 5000;
         $client->responseType = 'JSON';
         $this->loadingOverlay->show();
         

@@ -12,7 +12,7 @@ class FixParser
     static function parseDlls($path)
     {
         $files = fs::scan($path,['excludeDirs'=>true,'namePattern'=>
-                '(?i)^(emp|custom)\.dll$|^win.*\.dll$|^(online|steam).*\.(dll|ini|json)$|^eos.*\.dll$|^epicfix.*\.dll$|^(winmm|dlllist)\.txt$']);
+                '(?i)^(emp|custom)\.dll$|^win.*\.dll$|^(online|steam).*\.(dll|ini|json)$|^eos.*\.dll$|^epicfix.*\.dll$|^(winmm|dlllist)\.txt$|^launch_data\.of.*$']);
         if ($files == null or $files == [])
             return;
             
@@ -55,21 +55,20 @@ class FixParser
             {
                 $fixPath = fs::parent($file);
             }
-            elseif (str::lower($regexFile) == 'onlinefix.json' and fs::isFile(fs::parent($file).'/Launcher.exe'))
+            elseif (Regex::match('(?i)^launch_data\.of.*$|^onlinefix.json$',$regexFile) and fs::isFile(fs::parent($file).'/Launcher.exe') and fs::isFile(fs::parent($file).'/Newtonsoft.Json.dll') == false)
             {
-                $newton = fs::scan($path,['excludeDirs','namePattern'=>'^Newtonsoft\.Json\.(dll|pdb)$']);
+                $newton = fs::scan($path,['excludeDirs','namePattern'=>'^Newtonsoft\.Json\.dll$']);
                 if ($newton == [])
+                    fs::copy(ResourceStream::of('res://.data/Newtonsoft.Json/Newtonsoft.Json.dll'),fs::parent($file).'/Newtonsoft.Json.dll');
+                else
                 {
-                    Logger::warn('Photon Launcher detected, but no Newtonsoft libraries found. Skipping patching');
-                    continue;
-                }
-                
-                foreach ($newton as $lib)
-                {
-                    if ($lib->getAbsolutePath() != $lib->getCanonicalPath())
-                        continue;
-                    
-                    new Process(['ln','-s',$lib,fs::parent($file).'/'.fs::name($lib)])->startAndWait();
+                    foreach ($newton as $lib)
+                    {
+                        if ($lib->getAbsolutePath() != $lib->getCanonicalPath())
+                            continue;
+                        
+                        new Process(['ln','-s',$lib,fs::parent($file).'/'.fs::name($lib)])->startAndWait();
+                    }
                 }
                 
                 Logger::info('Photon Launcher patch applied!');

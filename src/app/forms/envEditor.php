@@ -96,6 +96,35 @@ class envEditor extends AbstractForm
     {    
         $this->doSaveButtonAction();
     }
+
+    /**
+     * @event env.keyUp-Ctrl+V 
+     */
+    function doEnvKeyUpCtrlV(UXKeyEvent $e = null)
+    {
+        if (str::contains($e->sender->text,'='))
+        {
+            $splitted = str::split($e->sender->text,'=');
+            
+            $e->sender->text = $splitted[0];
+            $this->value->text = $splitted[1];
+            
+            $this->value->requestFocus();
+            $this->value->positionCaret(str::length($this->value->text));
+        }
+    }
+
+    /**
+     * @event env.keyUp 
+     */
+    function doEnvKeyUp(UXKeyEvent $e = null)
+    {
+        if ($e->codeName == 'Equals')
+        {
+            $e->sender->text = str::replace($e->sender->text,'=',null);
+            $this->value->requestFocus();
+        }
+    }
     
     static function isBlacklistedEnv($env)
     {

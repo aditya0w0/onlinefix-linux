@@ -43,6 +43,8 @@ class MainForm extends AbstractForm
             
             $aria->reAddDownloadsFromPreviousSession();
         }
+        
+        $this->requestFocus();
     }
 
     /**

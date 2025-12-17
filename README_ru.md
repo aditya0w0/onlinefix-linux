@@ -18,7 +18,7 @@
     - OnlineFix - полная поддержка 64-битных, 32-битные могут иметь проблемы
     - FreeTP - полная поддержка
 - Кастомные сервера OnlineFix (Photon Launcher)
-    - Полная поддержка, но известны проблемы с Phasmophobia и скоро будут исправлены. Смотрите [временное решение](https://github.com/ZzEdovec/onlinefix-linux/issues/24#issuecomment-3559415325)
+    - Полная поддержка
 - SteamFix и EOSFix (совмещенные)
     - FreeTP - в большинстве случаев не работает, решение ищется
     - OnlineFix - полная поддержка

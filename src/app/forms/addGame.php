@@ -213,7 +213,12 @@ class addGame extends AbstractForm
         
         try 
         {
-            if (Json::decode(fs::get($newSource))['name'] == 'onlinefix')
+            $client = new HttpClient;
+            $client->connectTimeout = $client->readTimeout = 5000;
+            $client->responseType = 'JSON';
+            
+            $response = $client->get($newSource);
+            if ($response->isSuccess() and isset($response->body()['name']) and $response->body()['name'] == 'onlinefix')
             {
                 $this->appModule()->launcher->set('downloadsSource',$newSource,'User Settings');
                 $this->sourceLabel->text = sprintf(Localization::getByCode('ADDGAME.SOURCE'),$newSource);
